@@ -8,6 +8,15 @@ import(
 	"net/http"
 	"google.golang.org/appengine"
 )
+
+func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string, model interface{}){
+
+}
+
+func Recieve(req *http.Request, redirect ,googleid, googlesecretid string, token interface{}){
+
+}
+
 /// GOAUTH
 func GOOGLE_Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
 	values := make(url.Values)
