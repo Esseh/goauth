@@ -106,7 +106,7 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("response_type","code")
 	values.Add("scope", "openid email")
 
-	id , _ := uuid.NewV4
+	id := uuid.NewV4
 	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
 	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
@@ -203,7 +203,7 @@ func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID 
 	v.Add("client_id", clientID)
 	v.Add("redirect_uri", redirect)
 	
-	id , _ := uuid.NewV4
+	id := uuid.NewV4
 	v.Add("state", id.String() + "](|)[" + req.FormValue("state"))
 	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
@@ -280,7 +280,7 @@ func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("redirect_uri",redirect)
 	values.Add("scope", "user:email")
 	
-	id , _ := uuid.NewV4
+	id := uuid.NewV4
 	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
 
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
