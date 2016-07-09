@@ -10,7 +10,7 @@ import(
 	"errors"
 )
 
-const(
+var(
 	ErrBadToken = errors.New("Token Error: Invalid Token Used. \nDid you remember to pass it in as a pointer?")
 )
 
@@ -26,13 +26,13 @@ func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string,
 }
 
 func Recieve(req *http.Request, redirect ,clientID, secretID string, token interface{}) error {
-	switch model.(type){
+	switch token.(type){
 		case *DropboxToken:
-			return dropboxRecieve(req, redirect ,clientID, secretID, token)
+			return dropboxRecieve(req, redirect ,clientID, secretID, token.(*DropboxToken))
 		case *GitHubToken:
-			return githubRecieve(req, redirect ,clientID, secretID, token)
+			return githubRecieve(req, redirect ,clientID, secretID, token.(*GitHubToken))
 		case *GoogleToken:
-			return googleRecieve(req, redirect ,clientID, secretID, token)
+			return googleRecieve(req, redirect ,clientID, secretID, token.(*GoogleToken))
 	}
 	return ErrBadToken
 }
