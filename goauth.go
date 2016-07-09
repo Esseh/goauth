@@ -7,18 +7,38 @@ import(
 	"google.golang.org/appengine/urlfetch"	
 	"net/http"
 	"google.golang.org/appengine"
+	"errors"
 )
 
-func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string, model interface{}) error {
-	return nil
+const(
+	ErrBadToken = errors.New("Token Error: Invalid Token Used. \nDid you remember to pass it in as a pointer?")
+)
+
+func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string, model interface{}){
+	switch model.(type){
+		case *DropboxToken:
+			dropboxSend(res, req, redirect, clientID)
+		case *GitHubToken:
+			githubSend(res, req, redirect, clientID)
+		case *GoogleToken:
+			googleSend(res, req, redirect, clientID)
+	}
 }
 
-func Recieve(req *http.Request, redirect ,googleid, googlesecretid string, token interface{}) error {
-	return nil
+func Recieve(req *http.Request, redirect ,clientID, secretID string, token interface{}) error {
+	switch model.(type){
+		case *DropboxToken:
+			return dropboxRecieve(req, redirect ,clientID, secretID, token)
+		case *GitHubToken:
+			return githubRecieve(req, redirect ,clientID, secretID, token)
+		case *GoogleToken:
+			return googleRecieve(req, redirect ,clientID, secretID, token)
+	}
+	return ErrBadToken
 }
 
 /// GOAUTH
-func GOOGLE_Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
 	values := make(url.Values)
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
@@ -28,7 +48,7 @@ func GOOGLE_Send(res http.ResponseWriter, req *http.Request, redirect ,clientID 
 	http.Redirect(res, req, fmt.Sprintf("https://accounts.google.com/o/oauth2/auth?%s",values.Encode()), 302)
 }
 
-func GOOGLE_recieve(req *http.Request, redirect ,googleid, googlesecretid string) (*GoogleToken, error) {
+func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string, token *GoogleToken) error {
 	ctx := appengine.NewContext(req)
 	code := req.FormValue("code")
 	v := url.Values{}
@@ -40,33 +60,33 @@ func GOOGLE_recieve(req *http.Request, redirect ,googleid, googlesecretid string
 	client := urlfetch.Client(ctx)
 	res, err := client.PostForm("https://www.googleapis.com/oauth2/v4/token", v)
 	if err != nil {
-		return &GoogleToken{}, err
+		return err
 	}
 	defer res.Body.Close()
 	var data googleData
 	err = json.NewDecoder(res.Body).Decode(&data)
 	if err != nil {
-		return &GoogleToken{}, err
+		return err
 	}
 	newclient := urlfetch.Client(ctx)
 	newresponse, err := newclient.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
 	if err != nil { 
-		return &GoogleToken{}, err
+		return err
 	}	
 
 	defer newresponse.Body.Close()
 	var trueToken GoogleToken
 	err = json.NewDecoder(newresponse.Body).Decode(&trueToken)
 	if err != nil { 
-		return &GoogleToken{}, err	
+		return err	
 	}		
-	
-	return &trueToken, nil
+	*token = trueToken
+	return nil
 }
 
 
 
-func DROPBOX_recieve(req *http.Request, redirect ,ClientID, SecretID string) (*DropboxToken, error) {
+func dropboxRecieve(req *http.Request, redirect ,ClientID, SecretID string, token *DropboxToken) error {
 	ctx := appengine.NewContext(req)
 	v := url.Values{}
 	v.Add("code", req.FormValue("code"))
@@ -77,18 +97,19 @@ func DROPBOX_recieve(req *http.Request, redirect ,ClientID, SecretID string) (*D
 	client := urlfetch.Client(ctx)
 	res, err := client.PostForm("https://api.dropbox.com/1/oauth2/token", v)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer res.Body.Close()
 	var data DropboxToken
 	err = json.NewDecoder(res.Body).Decode(&data)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &data, nil
+	*token = data
+	return nil
 }
 
-func DROPBOX_Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
 	v := url.Values{}
 	v.Add("response_type", "code")
 	v.Add("client_id", clientID)
@@ -132,7 +153,7 @@ type GitHubToken struct {
 	
 	
 	
-func GITHUB_recieve(req *http.Request, redirect ,ClientID, SecretID string) (*GitHubToken, error) {
+func githubRecieve(req *http.Request, redirect ,ClientID, SecretID string, token *GitHubToken) error {
 	ctx := appengine.NewContext(req)	
 	values := make(url.Values)
 	values.Add("client_id", ClientID)
@@ -143,18 +164,18 @@ func GITHUB_recieve(req *http.Request, redirect ,ClientID, SecretID string) (*Gi
 	client := urlfetch.Client(ctx)
 	response0, err := client.PostForm("https://github.com/login/oauth/access_token", values)
 	if err != nil {
-		return &GitHubToken{}, err
+		return err
 	}
 	defer response0.Body.Close()
 
 	bs, err := ioutil.ReadAll(response0.Body)
 	if err != nil {
-		return &GitHubToken{}, err
+		return err
 	}
 
 	values, err = url.ParseQuery(string(bs))
 	if err != nil {
-		return &GitHubToken{}, err
+		return err
 	}
 
 	accessToken := values.Get("access_token")
@@ -162,7 +183,7 @@ func GITHUB_recieve(req *http.Request, redirect ,ClientID, SecretID string) (*Gi
 	client2 := urlfetch.Client(ctx)
 	response, err := client2.Get("https://api.github.com/user/emails?access_token=" + accessToken)
 	if err != nil {
-		return &GitHubToken{}, err
+		return err
 	}
 	defer response.Body.Close()
 
@@ -170,15 +191,16 @@ func GITHUB_recieve(req *http.Request, redirect ,ClientID, SecretID string) (*Gi
 	
 	err = json.NewDecoder(response.Body).Decode(&data)
 	if err != nil {
-		return &GitHubToken{}, err
+		return err
 	}
 	if len(data) == 0 {
-		return &GitHubToken{}, fmt.Errorf("no email found")
+		return fmt.Errorf("Err: no tokens found")
 	}
-	return &data[0], nil
+	*token = data[0]
+	return nil
 }
 
-func GITHUB_Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
 	values := make(url.Values)
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
