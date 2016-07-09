@@ -10,10 +10,12 @@ import(
 	"fmt"
 	"google.golang.org/appengine/urlfetch"	
 	"net/http"
+	"strings"
 	"google.golang.org/appengine"
 	"errors"
 	"google.golang.org/appengine/memcache"
 	"time"
+	"github.com/nu7hatch/gouuid"
 )
 
 var(
@@ -37,18 +39,21 @@ type GoogleToken struct {
 	Email 			string `json:"email"`
 	EmailVerified 	string `json:"email_verified"`
 	AccessType 		string `json:"access_type"`
+	State			string
 }
 
 type DropboxToken struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	UID         string `json:"uid"`
+	State		string
 }
 
 type GitHubToken struct {
-		Email    string
-		Verified bool
-		Primary  bool
+	Email    string
+	Verified bool
+	Primary  bool
+	State 	 string
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +105,9 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("redirect_uri",redirect)
 	values.Add("response_type","code")
 	values.Add("scope", "openid email")
-	values.Add("state", req.FormValue("redirect"))
+
+	id , _ := uuid.NewV4
+	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
 	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
 		Key: values.Get("state"),
@@ -151,6 +158,7 @@ func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string,
 		return err	
 	}		
 	*token = trueToken
+	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }
 
@@ -182,6 +190,7 @@ func dropboxRecieve(req *http.Request, redirect ,ClientID, SecretID string, toke
 		return err
 	}
 	*token = data
+	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }
 
@@ -193,7 +202,9 @@ func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID 
 	v.Add("response_type", "code")
 	v.Add("client_id", clientID)
 	v.Add("redirect_uri", redirect)
-	v.Add("state", req.FormValue("redirect"))
+	
+	id , _ := uuid.NewV4
+	v.Add("state", id.String() + "](|)[" + req.FormValue("state"))
 	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
 		Key: v.Get("state"),
@@ -256,6 +267,7 @@ func githubRecieve(req *http.Request, redirect ,ClientID, SecretID string, token
 		return fmt.Errorf("Err: no tokens found")
 	}
 	*token = data[0]
+	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }
 
@@ -267,7 +279,10 @@ func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
 	values.Add("scope", "user:email")
-	values.Add("state", req.FormValue("redirect"))
+	
+	id , _ := uuid.NewV4
+	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
+
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
 		Key: values.Get("state"),
 		Value: []byte("s"),
