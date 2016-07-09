@@ -103,7 +103,7 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("state", req.FormValue("redirect"))
 	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
-		Key: []byte(values.Get("state")),
+		Key: values.Get("state"),
 		Value: []byte("s"),
 		Expiration: time.Duration(time.Minute),
 	})
@@ -196,7 +196,7 @@ func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID 
 	v.Add("state", req.FormValue("redirect"))
 	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
-		Key: []byte(values.Get("state")),
+		Key: values.Get("state"),
 		Value: []byte("s"),
 		Expiration: time.Duration(time.Minute),
 	})
@@ -269,7 +269,7 @@ func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("scope", "user:email")
 	values.Add("state", req.FormValue("redirect"))
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
-		Key: []byte(values.Get("state")),
+		Key: values.Get("state"),
 		Value: []byte("s"),
 		Expiration: time.Duration(time.Minute),
 	})
