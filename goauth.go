@@ -12,6 +12,7 @@ import(
 	"net/http"
 	"google.golang.org/appengine"
 	"errors"
+	"google.golang.org/appengine/memcache"
 )
 
 var(
@@ -19,6 +20,10 @@ var(
 	// ErrBadToken is given if the type assertion in a recieve fails.
 	//////////////////////////////////////////////////////////////////////////////////
 	ErrBadToken = errors.New("Token Error: Invalid Token Used. \nDid you remember to pass it in as a pointer?")
+	//////////////////////////////////////////////////////////////////////////////////
+	// ErrCrossSite is given if states are invalid between send/recieve.
+	//////////////////////////////////////////////////////////////////////////////////
+	ErrCrossSite= errors.New("Error: Terminate Request, Cross Site Attack Detected")
 )
 
 type GoogleToken struct {
@@ -95,6 +100,13 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("response_type","code")
 	values.Add("scope", "openid email")
 	values.Add("state", req.FormValue("redirect"))
+	
+	memcache.Set(appengine.NewContext(req), &memcache.Item{
+		Key: []byte(values.Get("state")),
+		Value: []byte("s"),
+		Expiration: time.Duration(time.Minute),
+	})
+	
 	http.Redirect(res, req, fmt.Sprintf("https://accounts.google.com/o/oauth2/auth?%s",values.Encode()), 302)
 }
 
@@ -103,6 +115,10 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 //////////////////////////////////////////////////////////////////////////////////
 func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string, token *GoogleToken) error {
 	ctx := appengine.NewContext(req)
+	
+	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
+	if memErr != nil { return ErrCrossSite }
+	
 	code := req.FormValue("code")
 	v := url.Values{}
 	v.Add("code", code)
@@ -143,6 +159,10 @@ func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string,
 //////////////////////////////////////////////////////////////////////////////////
 func dropboxRecieve(req *http.Request, redirect ,ClientID, SecretID string, token *DropboxToken) error {
 	ctx := appengine.NewContext(req)
+
+	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
+	if memErr != nil { return ErrCrossSite }
+	
 	v := url.Values{}
 	v.Add("code", req.FormValue("code"))
 	v.Add("grant_type", "authorization_code")
@@ -173,6 +193,13 @@ func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID 
 	v.Add("client_id", clientID)
 	v.Add("redirect_uri", redirect)
 	v.Add("state", req.FormValue("redirect"))
+	
+	memcache.Set(appengine.NewContext(req), &memcache.Item{
+		Key: []byte(values.Get("state")),
+		Value: []byte("s"),
+		Expiration: time.Duration(time.Minute),
+	})
+	
 	http.Redirect(res, req, "https://www.dropbox.com/1/oauth2/authorize?"+v.Encode(), http.StatusSeeOther)
 }
 	
@@ -182,6 +209,10 @@ func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID 
 //////////////////////////////////////////////////////////////////////////////////	
 func githubRecieve(req *http.Request, redirect ,ClientID, SecretID string, token *GitHubToken) error {
 	ctx := appengine.NewContext(req)	
+	
+	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
+	if memErr != nil { return ErrCrossSite }
+	
 	values := make(url.Values)
 	values.Add("client_id", ClientID)
 	values.Add("client_secret", SecretID)
@@ -235,6 +266,12 @@ func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
 	values.Add("scope", "user:email")
-	values.Add("state", req.FormValue("redirect"))	
+	values.Add("state", req.FormValue("redirect"))
+	memcache.Set(appengine.NewContext(req), &memcache.Item{
+		Key: []byte(values.Get("state")),
+		Value: []byte("s"),
+		Expiration: time.Duration(time.Minute),
+	})
+	
 	http.Redirect(res, req, fmt.Sprintf("https://github.com/login/oauth/authorize?%s",values.Encode()), 302)
 }
