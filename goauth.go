@@ -9,12 +9,12 @@ import(
 	"google.golang.org/appengine"
 )
 
-func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string, model interface{}){
-
+func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string, model interface{}) error {
+	return nil
 }
 
-func Recieve(req *http.Request, redirect ,googleid, googlesecretid string, token interface{}){
-
+func Recieve(req *http.Request, redirect ,googleid, googlesecretid string, token interface{}) error {
+	return nil
 }
 
 /// GOAUTH
