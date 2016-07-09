@@ -196,7 +196,7 @@ func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID 
 	v.Add("state", req.FormValue("redirect"))
 	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
-		Key: values.Get("state"),
+		Key: v.Get("state"),
 		Value: []byte("s"),
 		Expiration: time.Duration(time.Minute),
 	})
