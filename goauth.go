@@ -184,8 +184,9 @@ func googleRecieve(req *http.Request, redirect ,clientID, secretID string, token
 	err = extractValue(res, &data) 
 	if err != nil { return err }
 	
+	ctx := appengine.NewContext(req)
 	client := urlfetch.Client(ctx)
-	res2, err := newclient.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
+	res2, err := client.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
 	if err != nil { return err }	
 
 	var trueToken GoogleToken
