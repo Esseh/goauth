@@ -207,6 +207,7 @@ func extractValue(res *http.Response, data interface{}) error {
 	if err != nil {
 		return err
 	}
+	return nil 
 }
 
 //////////////////////////////////////////////////////////////////////////////////
