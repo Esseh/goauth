@@ -27,6 +27,10 @@ var(
 	// ErrCrossSite is given if states are invalid between send/recieve.
 	//////////////////////////////////////////////////////////////////////////////////
 	ErrCrossSite= errors.New("Error: Terminate Request, Cross Site Attack Detected")
+	//////////////////////////////////////////////////////////////////////////////////
+	// ErrNoData is given if 1 or More expected values but get 0.
+	//////////////////////////////////////////////////////////////////////////////////
+	ErrNoData   = errors.New("Error: No Data")
 )
 
 type GoogleToken struct {
@@ -189,6 +193,7 @@ func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string,
 
 
 func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
+	req.Header.Set("Accept","application/json")
 	ctx := appengine.NewContext(req)
 	values := make(url.Values)
 	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
@@ -227,53 +232,26 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 //////////////////////////////////////////////////////////////////////////////////
 // Recieve for Github OAuth
 //////////////////////////////////////////////////////////////////////////////////	
-func githubRecieve(req *http.Request, redirect ,ClientID, SecretID string, token *GitHubToken) error {
-	ctx := appengine.NewContext(req)	
+type githubData struct {
+	AccessToken string `json:"access_token"`
+	Scope		string `json:"scope"`
+	TokenType	string `json:"token_type"`
+}
+func githubRecieve(req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
+	res, err := requiredRecieve(req, clientID, secretID, redirect, "https://github.com/login/oauth/access_token")
+	if err != nil { return err }
+	var ghd githubData
+	err = extractValue(res,&data)
+	if err != nil { return err }	
 	
-	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return ErrCrossSite }
-	
-	values := make(url.Values)
-	values.Add("client_id", ClientID)
-	values.Add("client_secret", SecretID)
-	values.Add("code", req.FormValue("code"))
-	values.Add("state", req.FormValue("redirect"))
-
 	client := urlfetch.Client(ctx)
-	response0, err := client.PostForm("https://github.com/login/oauth/access_token", values)
-	if err != nil {
-		return err
-	}
-	defer response0.Body.Close()
-
-	bs, err := ioutil.ReadAll(response0.Body)
-	if err != nil {
-		return err
-	}
-
-	values, err = url.ParseQuery(string(bs))
-	if err != nil {
-		return err
-	}
-
-	accessToken := values.Get("access_token")
-
-	client2 := urlfetch.Client(ctx)
-	response, err := client2.Get("https://api.github.com/user/emails?access_token=" + accessToken)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
+	res2, err := client.Get("https://api.github.com/user/emails?access_token=" + ghd.AccessToken)
+	if err != nil { return err }
 
 	var data []GitHubToken
+	err = extractValue(res2,&data)
+	if len(data) == 0 { return ErrNoData }
 	
-	err = json.NewDecoder(response.Body).Decode(&data)
-	if err != nil {
-		return err
-	}
-	if len(data) == 0 {
-		return fmt.Errorf("Err: no tokens found")
-	}
 	*token = data[0]
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
