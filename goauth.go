@@ -97,25 +97,47 @@ type googleData struct {
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-// Send for Google OAuth
+// Required Parameters - Also performs first half of check against cross-site attacks
 //////////////////////////////////////////////////////////////////////////////////
-func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+func requiredSend(req *http.Request,redirect, clientID string) url.Values {
 	values := make(url.Values)
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
 	values.Add("response_type","code")
-	values.Add("scope", "openid email")
-
 	id , _ := uuid.NewV4()
 	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
-	
 	memcache.Set(appengine.NewContext(req), &memcache.Item{
 		Key: values.Get("state"),
 		Value: []byte("s"),
 		Expiration: time.Duration(time.Minute),
 	})
-	
+	return values
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// Send for Google OAuth
+//////////////////////////////////////////////////////////////////////////////////
+func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+	values := requiredSend(req,redirect,clientID)
+	values.Add("scope", "openid email")
 	http.Redirect(res, req, fmt.Sprintf("https://accounts.google.com/o/oauth2/auth?%s",values.Encode()), 302)
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// Send for Dropbox OAuth
+//////////////////////////////////////////////////////////////////////////////////
+func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+	values := requiredSend(req,redirect,clientID)
+	http.Redirect(res, req, "https://www.dropbox.com/1/oauth2/authorize?"+v.Encode(), http.StatusSeeOther)
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// Send for Github OAuth
+//////////////////////////////////////////////////////////////////////////////////	
+func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+	values := requiredSend(req,redirect,clientID)
+	values.Add("scope", "user:email")
+	http.Redirect(res, req, fmt.Sprintf("https://github.com/login/oauth/authorize?%s",values.Encode()), 302)
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -192,29 +214,7 @@ func dropboxRecieve(req *http.Request, redirect ,ClientID, SecretID string, toke
 	*token = data
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-// Send for Dropbox OAuth
-//////////////////////////////////////////////////////////////////////////////////
-func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
-	v := url.Values{}
-	v.Add("response_type", "code")
-	v.Add("client_id", clientID)
-	v.Add("redirect_uri", redirect)
-	
-	id , _ := uuid.NewV4()
-	v.Add("state", id.String() + "](|)[" + req.FormValue("state"))
-	
-	memcache.Set(appengine.NewContext(req), &memcache.Item{
-		Key: v.Get("state"),
-		Value: []byte("s"),
-		Expiration: time.Duration(time.Minute),
-	})
-	
-	http.Redirect(res, req, "https://www.dropbox.com/1/oauth2/authorize?"+v.Encode(), http.StatusSeeOther)
-}
-	
+}	
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Recieve for Github OAuth
@@ -269,25 +269,4 @@ func githubRecieve(req *http.Request, redirect ,ClientID, SecretID string, token
 	*token = data[0]
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-// Send for Github OAuth
-//////////////////////////////////////////////////////////////////////////////////	
-func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
-	values := make(url.Values)
-	values.Add("client_id",clientID)
-	values.Add("redirect_uri",redirect)
-	values.Add("scope", "user:email")
-	
-	id , _ := uuid.NewV4()
-	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
-
-	memcache.Set(appengine.NewContext(req), &memcache.Item{
-		Key: values.Get("state"),
-		Value: []byte("s"),
-		Expiration: time.Duration(time.Minute),
-	})
-	
-	http.Redirect(res, req, fmt.Sprintf("https://github.com/login/oauth/authorize?%s",values.Encode()), 302)
 }
