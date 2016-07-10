@@ -5,7 +5,6 @@
 package goauth
 import(
 	"net/url"
-	"io/ioutil"
 	"encoding/json"
 	"fmt"
 	"google.golang.org/appengine/urlfetch"	
@@ -241,9 +240,10 @@ func githubRecieve(req *http.Request, redirect ,clientID, secretID string, token
 	res, err := requiredRecieve(req, clientID, secretID, redirect, "https://github.com/login/oauth/access_token")
 	if err != nil { return err }
 	var ghd githubData
-	err = extractValue(res,&data)
+	err = extractValue(res,&ghd)
 	if err != nil { return err }	
 	
+	ctx := appengine.NewContext(req)
 	client := urlfetch.Client(ctx)
 	res2, err := client.Get("https://api.github.com/user/emails?access_token=" + ghd.AccessToken)
 	if err != nil { return err }
