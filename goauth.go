@@ -188,22 +188,22 @@ func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string,
 	
 
 
-func requiredRecieve(req *http.Request, clientID, secretID, redirect, url string) (*Response, error) {
+func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
 	ctx := appengine.NewContext(req)
 	values := make(url.Values)
 	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return &Response{},ErrCrossSite }
+	if memErr != nil { return &http.Response{},ErrCrossSite }
 	values.Add("code", req.FormValue("code"))
 	values.Add("grant_type", "authorization_code")
 	values.Add("client_id", clientID)
 	values.Add("client_secret", secretID)
 	values.Add("redirect_uri", redirect)	
-	return urlfetch.Client(ctx).PostForm(url, values)
+	return urlfetch.Client(ctx).PostForm(src, values)
 }
 
-func extractValue(res *http.Response, data interface{}){
+func extractValue(res *http.Response, data interface{}) error {
 	defer res.Body.Close()
-	err = json.NewDecoder(res.Body).Decode(data)
+	err := json.NewDecoder(res.Body).Decode(data)
 	if err != nil {
 		return err
 	}
@@ -216,7 +216,8 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 	res, err := requiredRecieve(req,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
 	if err != nil { return err }
 	var data DropboxToken
-	extractValue(res,&data)
+	err = extractValue(res,&data)
+	if err != nil { return err }
 	*token = data
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
