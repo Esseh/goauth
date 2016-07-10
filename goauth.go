@@ -185,32 +185,38 @@ func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string,
 }
 
 
+	
+
+
+func requiredRecieve(req *http.Request, clientID, secretID, redirect, url string) (*Response, error) {
+	ctx := appengine.NewContext(req)
+	values := make(url.Values)
+	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
+	if memErr != nil { return &Response{},ErrCrossSite }
+	values.Add("code", req.FormValue("code"))
+	values.Add("grant_type", "authorization_code")
+	values.Add("client_id", clientID)
+	values.Add("client_secret", secretID)
+	values.Add("redirect_uri", redirect)	
+	return urlfetch.Client(ctx).PostForm(url, values)
+}
+
+func extractValue(res *http.Response, data interface{}){
+	defer res.Body.Close()
+	err = json.NewDecoder(res.Body).Decode(data)
+	if err != nil {
+		return err
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 // Recieve for Dropbox OAuth
 //////////////////////////////////////////////////////////////////////////////////
-func dropboxRecieve(req *http.Request, redirect ,ClientID, SecretID string, token *DropboxToken) error {
-	ctx := appengine.NewContext(req)
-
-	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return ErrCrossSite }
-	
-	v := url.Values{}
-	v.Add("code", req.FormValue("code"))
-	v.Add("grant_type", "authorization_code")
-	v.Add("client_id", ClientID)
-	v.Add("client_secret", SecretID)
-	v.Add("redirect_uri", redirect)
-	client := urlfetch.Client(ctx)
-	res, err := client.PostForm("https://api.dropbox.com/1/oauth2/token", v)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
+func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, token *DropboxToken) error {
+	res, err := requiredRecieve(req,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
+	if err != nil { return err }
 	var data DropboxToken
-	err = json.NewDecoder(res.Body).Decode(&data)
-	if err != nil {
-		return err
-	}
+	extractValue(res,&data)
 	*token = data
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
