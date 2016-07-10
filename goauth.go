@@ -128,7 +128,7 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 //////////////////////////////////////////////////////////////////////////////////
 func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
 	values := requiredSend(req,redirect,clientID)
-	http.Redirect(res, req, "https://www.dropbox.com/1/oauth2/authorize?"+v.Encode(), http.StatusSeeOther)
+	http.Redirect(res, req, "https://www.dropbox.com/1/oauth2/authorize?"+values.Encode(), http.StatusSeeOther)
 }
 
 //////////////////////////////////////////////////////////////////////////////////
