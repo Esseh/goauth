@@ -145,53 +145,11 @@ func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-// Recieve for Google OAuth
+// Makes the required recieve request for an access token.
+// ASSUMES: I am getting JSON back.
+// I can add in an Accept: application/json
+// but I have only used that for Github which ignored it.
 //////////////////////////////////////////////////////////////////////////////////
-func googleRecieve(req *http.Request, redirect ,googleid, googlesecretid string, token *GoogleToken) error {
-	ctx := appengine.NewContext(req)
-	
-	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return ErrCrossSite }
-	
-	code := req.FormValue("code")
-	v := url.Values{}
-	v.Add("code", code)
-	v.Add("client_id", googleid)
-	v.Add("client_secret", googlesecretid)
-	v.Add("redirect_uri", redirect)
-	v.Add("grant_type","authorization_code")
-	client := urlfetch.Client(ctx)
-	res, err := client.PostForm("https://www.googleapis.com/oauth2/v4/token", v)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	var data googleData
-	err = json.NewDecoder(res.Body).Decode(&data)
-	if err != nil {
-		return err
-	}
-	newclient := urlfetch.Client(ctx)
-	newresponse, err := newclient.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
-	if err != nil { 
-		return err
-	}	
-
-	defer newresponse.Body.Close()
-	var trueToken GoogleToken
-	err = json.NewDecoder(newresponse.Body).Decode(&trueToken)
-	if err != nil { 
-		return err	
-	}		
-	*token = trueToken
-	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
-	return nil
-}
-
-
-	
-
-
 func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
 	ctx := appengine.NewContext(req)
 	values := make(url.Values)
@@ -205,6 +163,9 @@ func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string
 	return urlfetch.Client(ctx).PostForm(src, values)
 }
 
+//////////////////////////////////////////////////////////////////////////////////
+// Uses reflection to extract a JSON object from a response into an input struct.
+//////////////////////////////////////////////////////////////////////////////////
 func extractValue(res *http.Response, data interface{}) error {
 	defer res.Body.Close()
 	err := json.NewDecoder(res.Body).Decode(data)
@@ -212,6 +173,28 @@ func extractValue(res *http.Response, data interface{}) error {
 		return err
 	}
 	return nil 
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// Recieve for Google OAuth
+//////////////////////////////////////////////////////////////////////////////////
+func googleRecieve(req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
+	res, err := requiredRecieve(req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
+	var data googleData
+	err = extractValue(res, &data) 
+	if err != nil { return err }
+	
+	client := urlfetch.Client(ctx)
+	res2, err := newclient.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
+	if err != nil { return err }	
+
+	var trueToken GoogleToken
+	err = extractValue(res2, &trueToken) 
+	if err != nil { return err }
+	
+	*token = trueToken
+	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
+	return nil
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -230,45 +213,49 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 	
 //////////////////////////////////////////////////////////////////////////////////
 // Recieve for Github OAuth
-/// 
+/// Github isn't taking my Accept: application/json
+/// So Without the ability to unmarshal this ends up way uglier than it should 
+/// be.
 //////////////////////////////////////////////////////////////////////////////////	
 func githubRecieve(req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
 	ctx := appengine.NewContext(req)	
 	
+	// Check cross site
 	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
 	if memErr != nil { return ErrCrossSite }
 	
+	// Send first request..
 	values := make(url.Values)
 	values.Add("client_id", clientID)
 	values.Add("client_secret", secretID)
 	values.Add("code", req.FormValue("code"))
 	values.Add("state", req.FormValue("redirect"))
-
 	client := urlfetch.Client(ctx)
 	response0, err := client.PostForm("https://github.com/login/oauth/access_token", values)
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
+
+	// Oh hey, form values instead of JSON, and github is ignoring my accept headers so...
 	defer response0.Body.Close()
-
 	bs, err := ioutil.ReadAll(response0.Body)
-	if err != nil {
-		return err
-	}
-
+	if err != nil { return err }
 	values, err = url.ParseQuery(string(bs))
 	if err != nil { return err }
+
+	// Get access token.
 	accessToken := values.Get("access_token")
 
+	// Make second request.
 	client2 := urlfetch.Client(ctx)
 	response, err := client2.Get("https://api.github.com/user/emails?access_token=" + accessToken)
 	if err != nil { return err }
 
+	// Extract token. Make sure there is data.
 	var data []GitHubToken
 	err = extractValue(response,&data)
 	if err != nil { return err }	
 	if len(data) == 0 { return ErrNoData }
 
+	// Attatch data and state.
 	*token = data[0]
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
