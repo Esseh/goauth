@@ -2,7 +2,7 @@ package goauth
 import(
 	"net/http"
 	"google.golang.org/appengine/log"
-	//"strings"
+	"strings"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/urlfetch"
 )
@@ -34,8 +34,10 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 		return err 
 	}
 	defer resp.Body.Close()
+
+	(*req) = *(resp.Request)
 	
-	/*res, err := requiredRecieve(resp.Request,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
+	res, err := requiredRecieve(req,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
 	if err != nil { 
 		log.Errorf(ctx,"\nDROPBOX ERROR 2\n",err)
 		return err 
@@ -47,6 +49,6 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 		return err 
 	}
 	*token = data
-	token.State = strings.Split(resp.Request.FormValue("state"),"](|)[")[1]*/
+	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }	
