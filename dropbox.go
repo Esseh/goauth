@@ -30,14 +30,13 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 	resp, err := urlfetch.Client(ctx).Get("https://www.dropbox.com/1/oauth2/authorize?"+values.Encode())
 	if err != nil { return err }
 	defer resp.Body.Close()
-	req = resp.Request
 	
-	res, err := requiredRecieve(req,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
+	res, err := requiredRecieve(resp.Request,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
 	if err != nil { return err }
 	var data DropboxToken
 	err = extractValue(res,&data)
 	if err != nil { return err }
 	*token = data
-	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
+	token.State = strings.Split(resp.Request.FormValue("state"),"](|)[")[1]
 	return nil
 }	
