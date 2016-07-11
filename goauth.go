@@ -161,7 +161,7 @@ func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string
 	values.Add("client_secret", secretID)
 	values.Add("redirect_uri", redirect)	
 
-	client := &http.Client{}
+	client := urlfetch.Client(ctx)
 	reqq, err := http.NewRequest(http.MethodPost, src, strings.NewReader(values.Encode()))
 	if err != nil { 
 		return &http.Response{}, err 
