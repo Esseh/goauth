@@ -14,7 +14,6 @@ import(
 	"errors"
 	"google.golang.org/appengine/memcache"
 	"time"
-	"strings"
 	"github.com/nu7hatch/gouuid"
 )
 
