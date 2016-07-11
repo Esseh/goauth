@@ -224,36 +224,21 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 /// So Without the ability to unmarshal this ends up way uglier than it should 
 /// be.
 //////////////////////////////////////////////////////////////////////////////////	
+type githubData struct {
+	AccessToken string `json:"access_token"`
+	Scope		string `json:"scope"`
+	TokenType	string `json:"token_type"`
+}
 func githubRecieve(req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
-	ctx := appengine.NewContext(req)	
-	
-	// Check cross site
-	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return ErrCrossSite }
-	
-	// Send first request..
-	values := make(url.Values)
-	values.Add("client_id", clientID)
-	values.Add("client_secret", secretID)
-	values.Add("code", req.FormValue("code"))
-	values.Add("state", req.FormValue("redirect"))
-	client := urlfetch.Client(ctx)
-	response0, err := client.PostForm("https://github.com/login/oauth/access_token", values)
+	res, err := requiredRecieve(req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
 	if err != nil { return err }
 
-	// Oh hey, form values instead of JSON, and github is ignoring my accept headers so...
-	defer response0.Body.Close()
-	bs, err := ioutil.ReadAll(response0.Body)
+	var ghd githubData
+	err = extractValue(res,&data)
 	if err != nil { return err }
-	values, err = url.ParseQuery(string(bs))
-	if err != nil { return err }
-
-	// Get access token.
-	accessToken := values.Get("access_token")
 
 	// Make second request.
-	client2 := urlfetch.Client(ctx)
-	response, err := client2.Get("https://api.github.com/user/emails?access_token=" + accessToken)
+	response, err := urlfetch.Client(ctx).Get("https://api.github.com/user/emails?access_token=" + accessToken)
 	if err != nil { return err }
 
 	// Extract token. Make sure there is data.
