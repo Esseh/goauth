@@ -41,7 +41,10 @@ func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string
 	ctx := appengine.NewContext(req)
 	values := make(url.Values)
 	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return &http.Response{},ErrCrossSite }
+	if memErr != nil { 
+		log.Errorf(ctx,"\nGENERAL RECIEVE ERROR 1\n",memErr)
+		return &http.Response{},ErrCrossSite 
+	}
 	values.Add("code", req.FormValue("code"))
 	values.Add("grant_type", "authorization_code")
 	values.Add("client_id", clientID)
@@ -52,7 +55,7 @@ func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string
 	reqq, err := http.NewRequest(http.MethodPost, src, strings.NewReader(values.Encode()))
 	if err != nil { 
 		return &http.Response{}, err 
-		log.Errorf(ctx,"Problem Making Request\n\n",err)
+		log.Errorf(ctx,"\nINTERNAL ERROR 2\n",err)
 	}
 	reqq.Header.Set("Accept","application/json")
 	return client.Do(reqq)
