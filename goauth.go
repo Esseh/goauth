@@ -8,6 +8,7 @@ import(
 	"encoding/json"
 	"fmt"
 	"google.golang.org/appengine/urlfetch"	
+	"google.golang.org/appengine/log"
 	"net/http"
 	"strings"
 	"google.golang.org/appengine"
@@ -161,8 +162,11 @@ func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string
 	values.Add("redirect_uri", redirect)	
 
 	client := &http.Client{}
-	reqq, err := http.NewRequest("POST", src, strings.NewReader(values.Encode()))
-	if err != nil { return &http.Response{}, err }
+	reqq, err := http.NewRequest(http.MethodPost, src, strings.NewReader(values.Encode()))
+	if err != nil { 
+		return &http.Response{}, err 
+		log.Errorf(ctx,"Problem Making Request\n\n",err)
+	}
 	reqq.Header.Set("Accept","application/json")
 	return client.Do(reqq)
 }
@@ -184,7 +188,10 @@ func extractValue(res *http.Response, data interface{}) error {
 //////////////////////////////////////////////////////////////////////////////////
 func googleRecieve(req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
 	res, err := requiredRecieve(req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
-	if err != nil { return err }
+	if err != nil { 
+		log.Errorf(ctx,"Problem Generating Response\n\n",err)
+		return err 
+	}
 	var data googleData
 	err = extractValue(res, &data) 
 	if err != nil { return err }
