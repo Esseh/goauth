@@ -14,7 +14,7 @@ import(
 	"errors"
 	"google.golang.org/appengine/memcache"
 	"time"
-	"bytes"
+	"strings"
 	"github.com/nu7hatch/gouuid"
 )
 
@@ -162,7 +162,7 @@ func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string
 	values.Add("redirect_uri", redirect)	
 
 	client := &http.Client{}
-	reqq, err := http.NewRequest("POST", src, bytes.NewBuffer([]byte(values.Encode())))
+	reqq, err := http.NewRequest("POST", src, strings.NewReader(values.Encode()))
 	if err != nil { return &http.Response{}, err }
 	reqq.Header.Set("Accept","application/json")
 	return client.Do(reqq)
@@ -185,6 +185,7 @@ func extractValue(res *http.Response, data interface{}) error {
 //////////////////////////////////////////////////////////////////////////////////
 func googleRecieve(req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
 	res, err := requiredRecieve(req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
+	if err != nil { return err }
 	var data googleData
 	err = extractValue(res, &data) 
 	if err != nil { return err }
