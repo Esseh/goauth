@@ -187,6 +187,7 @@ func extractValue(res *http.Response, data interface{}) error {
 // Recieve for Google OAuth
 //////////////////////////////////////////////////////////////////////////////////
 func googleRecieve(req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
+	ctx := appengine.NewContext(req)
 	res, err := requiredRecieve(req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
 	if err != nil { 
 		log.Errorf(ctx,"Problem Generating Response\n\n",err)
@@ -196,7 +197,6 @@ func googleRecieve(req *http.Request, redirect ,clientID, secretID string, token
 	err = extractValue(res, &data) 
 	if err != nil { return err }
 	
-	ctx := appengine.NewContext(req)
 	client := urlfetch.Client(ctx)
 	res2, err := client.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
 	if err != nil { return err }	
