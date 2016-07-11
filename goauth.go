@@ -15,6 +15,7 @@ import(
 	"errors"
 	"google.golang.org/appengine/memcache"
 	"time"
+	"bytes"
 	"github.com/nu7hatch/gouuid"
 )
 
@@ -160,7 +161,12 @@ func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string
 	values.Add("client_id", clientID)
 	values.Add("client_secret", secretID)
 	values.Add("redirect_uri", redirect)	
-	return urlfetch.Client(ctx).PostForm(src, values)
+
+	client := &http.Client{}
+	reqq, err := http.NewRequest("POST", src, bytes.NewBuffer([]byte(values.Encode())))
+	if err != nil { return &http.Response{}, err }
+	reqq.Header.Set("Accept","application/json")
+	return client.Do(reqq)
 }
 
 //////////////////////////////////////////////////////////////////////////////////
