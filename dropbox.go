@@ -29,6 +29,7 @@ func dropboxRecieve(req *http.Request, redirect ,clientID, secretID string, toke
 	ctx := appengine.NewContext(req)
 	resp, err := urlfetch.Client(ctx).Get("https://www.dropbox.com/1/oauth2/authorize?"+values.Encode())
 	if err != nil { return err }
+	defer resp.Body.Close()
 	req = resp.Request
 	
 	res, err := requiredRecieve(req,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
