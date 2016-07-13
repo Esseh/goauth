@@ -2,10 +2,7 @@ package goauth
 import(
 	"net/http"
 	"fmt"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/urlfetch"	
 	"strings"
-	"google.golang.org/appengine"
 )
 
 type GoogleToken struct {
@@ -43,18 +40,15 @@ type googleData struct {
 	RefreshToken string `json:"refresh_token"`
 }
 func googleRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
-	ctx := appengine.NewContext(req)
 	resp, err := requiredRecieve(res,req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
 	if err != nil { 
-		log.Errorf(ctx,"Problem Generating Response\n\n",err)
 		return err 
 	}
 	var data googleData
 	err = extractValue(resp, &data) 
 	if err != nil { return err }
 	
-	client := urlfetch.Client(ctx)
-	res2, err := client.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
+	res2, err := internalClient(req).Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
 	if err != nil { return err }	
 
 	var trueToken GoogleToken

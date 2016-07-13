@@ -3,8 +3,6 @@ import(
 	"net/http"
 	"fmt"
 	"strings"
-	"google.golang.org/appengine/urlfetch"	
-	"google.golang.org/appengine"
 )
 
 type GitHubToken struct {
@@ -13,6 +11,7 @@ type GitHubToken struct {
 	Primary  bool
 	State 	 string
 }
+
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -44,7 +43,7 @@ func githubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientI
 	if err != nil { return err }
 	
 	// Make second request.
-	response, err := urlfetch.Client(appengine.NewContext(req)).Get("https://api.github.com/user/emails?access_token=" + ghd.AccessToken)
+	response, err := internalClient(req).Get("https://api.github.com/user/emails?access_token=" + ghd.AccessToken)
 	if err != nil { return err }
 
 	// Extract token. Make sure there is data.

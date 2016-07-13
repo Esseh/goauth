@@ -78,7 +78,7 @@ func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secre
 	values.Add("client_secret", secretID)
 	values.Add("redirect_uri", redirect)	
 
-	client := urlfetch.Client(ctx)
+	client := internalClient(req)
 	reqq, err := http.NewRequest(http.MethodPost, src, strings.NewReader(values.Encode()))
 	if err != nil { 
 		return &http.Response{}, err 
@@ -98,4 +98,12 @@ func extractValue(res *http.Response, data interface{}) error {
 		return err
 	}
 	return nil 
+}
+
+func internalClient(req *http.Request) *http.Client{
+	switch ClientType{
+		case "appengine":
+			return urlfetch.Client(appengine.NewContext(req))
+	}
+	return &http.Client{}
 }
