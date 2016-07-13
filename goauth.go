@@ -13,8 +13,11 @@ import(
 // be set to the type of application you're using ie:
 //	"appengine"
 // If a type is not specified it will attempt to create a base http.Client
+// A special value is "override" which will override with whatever client is
+// generated in the lambda function stored in "ClientOverride"
 //////////////////////////////////////////////////////////////////////////////////
 var ClientType string
+var ClientOverride func(*http.Request)(*http.Client)
 
 var(
 	//////////////////////////////////////////////////////////////////////////////////

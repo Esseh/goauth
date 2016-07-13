@@ -102,6 +102,8 @@ func extractValue(res *http.Response, data interface{}) error {
 
 func internalClient(req *http.Request) *http.Client{
 	switch ClientType{
+		case "override":
+			return ClientOverride(req)
 		case "appengine":
 			return urlfetch.Client(appengine.NewContext(req))
 	}
