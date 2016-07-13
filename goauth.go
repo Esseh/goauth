@@ -22,7 +22,7 @@ var ClientType string
 var ClientOverride func(*http.Request)(*http.Client)
 // Initialize cross site checking. It should somehow store
 // a piece of unique information.
-var CrossSiteInitialize func(http.ResponseWriter,*http.Request)
+var CrossSiteInitialize func(http.ResponseWriter,*http.Request,string)
 // Resolve cross site checking. It should ensure that the value
 // stored in CrossSiteInitialize has not changed.
 // If an error is returned it should return "goauth.ErrCrossSite"

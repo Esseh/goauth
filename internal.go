@@ -2,11 +2,9 @@ package goauth
 import(
 	"net/url"
 	"encoding/json"
-	"google.golang.org/appengine/urlfetch"	
 	"github.com/nu7hatch/gouuid"
 	"net/http"
 	"strings"
-	"google.golang.org/appengine"
 )
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -67,12 +65,15 @@ func extractValue(res *http.Response, data interface{}) error {
 	return nil 
 }
 
+//////////////////////////////////////////////////////////////////////////////////
+// Multiplexer to determine the proper way to generate an http.Client{}
+//////////////////////////////////////////////////////////////////////////////////
 func internalClient(req *http.Request) *http.Client{
 	switch ClientType{
 		case "override":
 			return ClientOverride(req)
 		case "appengine":
-			return urlfetch.Client(appengine.NewContext(req))
+			return appengineClient(req)
 	}
 	return &http.Client{}
 }

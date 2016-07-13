@@ -2,22 +2,19 @@ package goauth
 import (
 	"time"
 	"net/http"
-	"google.golang.org/appengine/memcache"
 	"crypto/sha256"
 	"encoding/base64"
-	"google.golang.org/appengine"
 )
 
+//////////////////////////////////////////////////////////////////////////////////
+// Stores some piece of information in order to check it later.
+//////////////////////////////////////////////////////////////////////////////////
 func crossSiteInitialize(res http.ResponseWriter,req *http.Request, v string){
 	switch ClientType{
 		case "override":
-			CrossSiteInitialize(res,req)
+			CrossSiteInitialize(res,req, v)
 		case "appengine":
-			memcache.Set(appengine.NewContext(req), &memcache.Item{
-				Key: v,
-				Value: []byte("s"),
-				Expiration: time.Duration(time.Minute),
-			})			
+			appengineCrossSiteInitialize(res, req, v)
 		default:
 			h := sha256.New()
 			h.Write([]byte(v))
@@ -33,14 +30,15 @@ func crossSiteInitialize(res http.ResponseWriter,req *http.Request, v string){
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////
+// Checks the information previously stored to check against cross site attacks. 
+//////////////////////////////////////////////////////////////////////////////////
 func crossSiteResolve(res http.ResponseWriter,req *http.Request) error {
 	switch ClientType{
 		case "override":
 			return CrossSiteResolve(res,req)
 		case "appengine":
-			ctx := appengine.NewContext(req)
-			_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-			if memErr != nil { return ErrCrossSite }
+			return appengineCrossSiteResolve(res,req)
 		default:
 			cookie, cookErr := req.Cookie("goauth")
 			if cookErr != nil {
