@@ -42,14 +42,14 @@ func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string,
 // Recieve is a multiplexer function, based on the token type it will use the 
 // appropriate function to get the OAuth token.
 //////////////////////////////////////////////////////////////////////////////////
-func Recieve(req *http.Request, redirect ,clientID, secretID string, token interface{}) error {
+func Recieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token interface{}) error {
 	switch token.(type){
 		case *DropboxToken:
-			return dropboxRecieve(req, redirect ,clientID, secretID, token.(*DropboxToken))
+			return dropboxRecieve(res, req, redirect ,clientID, secretID, token.(*DropboxToken))
 		case *GitHubToken:
-			return githubRecieve(req, redirect ,clientID, secretID, token.(*GitHubToken))
+			return githubRecieve(res, req, redirect ,clientID, secretID, token.(*GitHubToken))
 		case *GoogleToken:
-			return googleRecieve(req, redirect ,clientID, secretID, token.(*GoogleToken))
+			return googleRecieve(res, req, redirect ,clientID, secretID, token.(*GoogleToken))
 	}
 	return ErrBadToken
 }

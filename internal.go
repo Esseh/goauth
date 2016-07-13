@@ -1,13 +1,15 @@
 package goauth
 import(
 	"net/url"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"google.golang.org/appengine/urlfetch"	
 	"google.golang.org/appengine/log"
 	"net/http"
 	"strings"
 	"google.golang.org/appengine"
-	"google.golang.org/appengine/memcache"
+	//"google.golang.org/appengine/memcache"
 	"time"
 	"github.com/nu7hatch/gouuid"
 )
@@ -15,18 +17,31 @@ import(
 //////////////////////////////////////////////////////////////////////////////////
 // Required Parameters - Also performs first half of check against cross-site attacks
 //////////////////////////////////////////////////////////////////////////////////
-func requiredSend(req *http.Request,redirect, clientID string) url.Values {
+func requiredSend(res http.ResponseWriter,req *http.Request,redirect, clientID string) url.Values {
 	values := make(url.Values)
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
 	values.Add("response_type","code")
 	id , _ := uuid.NewV4()
 	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
-	memcache.Set(appengine.NewContext(req), &memcache.Item{
+
+	h := sha256.New()
+	h.Write([]byte(values.Get("state")))
+	encoded := base64.URLEncoding.EncodeToString(h.Sum(nil))
+
+	http.SetCookie(res,&http.Cookie{
+		Name: "goauth",
+		Value: encoded,
+		Expires: time.Now().Add(time.Minute),
+		Domain: req.URL.Host,
+	})
+	/*memcache.Set(appengine.NewContext(req), &memcache.Item{
 		Key: values.Get("state"),
 		Value: []byte("s"),
 		Expiration: time.Duration(time.Minute),
-	})
+	})*/
+	
+	
 	return values
 }
 
@@ -37,11 +52,26 @@ func requiredSend(req *http.Request,redirect, clientID string) url.Values {
 // I can add in an Accept: application/json
 // but I have only used that for Github which ignored it.
 //////////////////////////////////////////////////////////////////////////////////
-func requiredRecieve(req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
+func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
 	ctx := appengine.NewContext(req)
 	values := make(url.Values)
-	_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return &http.Response{},ErrCrossSite }
+
+	cookie, cookErr := req.Cookie("goauth")
+	if cookErr != nil {
+		return &http.Response{},ErrCrossSite
+	}
+	
+	h := sha256.New()
+	h.Write([]byte(req.FormValue("state")))
+	stateValue := base64.URLEncoding.EncodeToString(h.Sum(nil))
+	
+	if len(cookie.Value) < 18 || stateValue != cookie.Value {
+		return &http.Response{},ErrCrossSite	
+	}
+	
+	/*_ , memErr := memcache.Get(ctx, req.FormValue("state"))
+	if memErr != nil { return &http.Response{},ErrCrossSite }*/
+	
 	values.Add("code", req.FormValue("code"))
 	values.Add("grant_type", "authorization_code")
 	values.Add("client_id", clientID)

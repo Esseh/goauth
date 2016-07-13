@@ -26,7 +26,7 @@ type GoogleToken struct {
 // Send for Google OAuth
 //////////////////////////////////////////////////////////////////////////////////
 func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
-	values := requiredSend(req,redirect,clientID)
+	values := requiredSend(res,req,redirect,clientID)
 	values.Add("scope", "openid email")
 	http.Redirect(res, req, fmt.Sprintf("https://accounts.google.com/o/oauth2/auth?%s",values.Encode()), 302)
 }
@@ -42,15 +42,15 @@ type googleData struct {
 	TokenType   string `json:"token_type"`
 	RefreshToken string `json:"refresh_token"`
 }
-func googleRecieve(req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
+func googleRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
 	ctx := appengine.NewContext(req)
-	res, err := requiredRecieve(req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
+	resp, err := requiredRecieve(res,req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
 	if err != nil { 
 		log.Errorf(ctx,"Problem Generating Response\n\n",err)
 		return err 
 	}
 	var data googleData
-	err = extractValue(res, &data) 
+	err = extractValue(resp, &data) 
 	if err != nil { return err }
 	
 	client := urlfetch.Client(ctx)

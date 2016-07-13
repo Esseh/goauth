@@ -19,7 +19,7 @@ type GitHubToken struct {
 // Send for Github OAuth
 //////////////////////////////////////////////////////////////////////////////////	
 func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
-	values := requiredSend(req,redirect,clientID)
+	values := requiredSend(res,req,redirect,clientID)
 	values.Add("scope", "user:email")
 	http.Redirect(res, req, fmt.Sprintf("https://github.com/login/oauth/authorize?%s",values.Encode()), 302)
 }
@@ -35,12 +35,12 @@ type githubData struct {
 	Scope		string `json:"scope"`
 	TokenType	string `json:"token_type"`
 }
-func githubRecieve(req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
-	res, err := requiredRecieve(req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
+func githubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
+	resp, err := requiredRecieve(res,req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
 	if err != nil { return err }
 
 	var ghd githubData
-	err = extractValue(res,&ghd)
+	err = extractValue(resp,&ghd)
 	if err != nil { return err }
 	
 	// Make second request.
