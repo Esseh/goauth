@@ -79,7 +79,7 @@ func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secre
 	values.Add("redirect_uri", redirect)	
 
 	client := internalClient(req)
-	reqq, err := http.NewRequest(http.MethodPost, src, strings.NewReader(values.Encode()))
+	reqq, err := http.NewRequest("POST", src, strings.NewReader(values.Encode()))
 	if err != nil { 
 		return &http.Response{}, err 
 		log.Errorf(ctx,"Problem Making Request\n\n",err)
