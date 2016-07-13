@@ -1,17 +1,12 @@
 package goauth
 import(
 	"net/url"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"google.golang.org/appengine/urlfetch"	
-	"google.golang.org/appengine/log"
+	"github.com/nu7hatch/gouuid"
 	"net/http"
 	"strings"
 	"google.golang.org/appengine"
-	//"google.golang.org/appengine/memcache"
-	"time"
-	"github.com/nu7hatch/gouuid"
 )
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -22,25 +17,12 @@ func requiredSend(res http.ResponseWriter,req *http.Request,redirect, clientID s
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
 	values.Add("response_type","code")
+
 	id , _ := uuid.NewV4()
 	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
 
-	h := sha256.New()
-	h.Write([]byte(values.Get("state")))
-	encoded := base64.URLEncoding.EncodeToString(h.Sum(nil))
-
-	http.SetCookie(res,&http.Cookie{
-		Name: "goauth",
-		Value: encoded,
-		Expires: time.Now().Add(time.Minute),
-		Domain: req.URL.Host,
-	})
-	/*memcache.Set(appengine.NewContext(req), &memcache.Item{
-		Key: values.Get("state"),
-		Value: []byte("s"),
-		Expiration: time.Duration(time.Minute),
-	})*/
-	
+	v := values.Get("state")
+	crossSiteInitialize(res,req, v)
 	
 	return values
 }
@@ -53,24 +35,10 @@ func requiredSend(res http.ResponseWriter,req *http.Request,redirect, clientID s
 // but I have only used that for Github which ignored it.
 //////////////////////////////////////////////////////////////////////////////////
 func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
-	ctx := appengine.NewContext(req)
 	values := make(url.Values)
-
-	cookie, cookErr := req.Cookie("goauth")
-	if cookErr != nil {
-		return &http.Response{},ErrCrossSite
-	}
 	
-	h := sha256.New()
-	h.Write([]byte(req.FormValue("state")))
-	stateValue := base64.URLEncoding.EncodeToString(h.Sum(nil))
-	
-	if len(cookie.Value) < 18 || stateValue != cookie.Value {
-		return &http.Response{},ErrCrossSite	
-	}
-	
-	/*_ , memErr := memcache.Get(ctx, req.FormValue("state"))
-	if memErr != nil { return &http.Response{},ErrCrossSite }*/
+	intErr := crossSiteResolve(res,req)
+	if intErr != nil { return &http.Response{},ErrCrossSite }
 	
 	values.Add("code", req.FormValue("code"))
 	values.Add("grant_type", "authorization_code")
@@ -82,7 +50,6 @@ func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secre
 	reqq, err := http.NewRequest("POST", src, strings.NewReader(values.Encode()))
 	if err != nil { 
 		return &http.Response{}, err 
-		log.Errorf(ctx,"Problem Making Request\n\n",err)
 	}
 	reqq.Header.Set("Accept","application/json")
 	return client.Do(reqq)

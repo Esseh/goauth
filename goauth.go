@@ -9,15 +9,24 @@ import(
 )
 
 //////////////////////////////////////////////////////////////////////////////////
-// ClientType helps goauth know how to generate http clients. In an init() it should
-// be set to the type of application you're using ie:
+// ClientType helps goauth know how to generate http clients and resolve cross site checks. 
+// In an init() it should be set to the type of application you're using ie:
 //	"appengine"
 // If a type is not specified it will attempt to create a base http.Client
-// A special value is "override" which will override with whatever client is
-// generated in the lambda function stored in "ClientOverride"
+// and use a cookie SHA scheme to resolve cross site checks.
+// A special value is "override" which will override the behaviors with 3 
+// functions "ClientOverride" , "CrossSiteInitialize", "CrossSiteResolve"
 //////////////////////////////////////////////////////////////////////////////////
 var ClientType string
+// Creates the client for the application.
 var ClientOverride func(*http.Request)(*http.Client)
+// Initialize cross site checking. It should somehow store
+// a piece of unique information.
+var CrossSiteInitialize func(http.ResponseWriter,*http.Request)
+// Resolve cross site checking. It should ensure that the value
+// stored in CrossSiteInitialize has not changed.
+// If an error is returned it should return "goauth.ErrCrossSite"
+var CrossSiteResolve func(http.ResponseWriter,*http.Request) error
 
 var(
 	//////////////////////////////////////////////////////////////////////////////////
