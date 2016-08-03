@@ -77,3 +77,22 @@ func internalClient(req *http.Request) *http.Client{
 	}
 	return &http.Client{}
 }
+
+
+
+func CallAPI(req *http.Request,METHOD, src string, values url.Values, data interface{}) error {
+	client := internalClient(req)
+	var reqq *http.Request
+	var err error
+	if METHOD == "POST" {
+		reqq, err = http.NewRequest(METHOD, src, strings.NewReader(values.Encode()))
+	} else {
+		reqq, err = http.NewRequest(METHOD+"?"+values.Encode(), src, nil)
+	}
+
+	if err != nil { return err }
+	reqq.Header.Set("Accept","application/json")
+	resp, err := client.Do(reqq)	
+	if err != nil { return err }
+	return extractValue(resp,&data)
+}
