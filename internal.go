@@ -87,7 +87,7 @@ func CallAPI(req *http.Request,METHOD, src string, values url.Values, data inter
 	if METHOD == "POST" {
 		reqq, err = http.NewRequest(METHOD, src, strings.NewReader(values.Encode()))
 	} else {
-		reqq, err = http.NewRequest(METHOD+"?"+values.Encode(), src, nil)
+		reqq, err = http.NewRequest(METHOD, src+"?"+values.Encode(), nil)
 	}
 
 	if err != nil { return err }
