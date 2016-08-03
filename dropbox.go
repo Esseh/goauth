@@ -37,7 +37,7 @@ type DropboxAccountInfo struct {
 	} `json:"quota_info"`
 }
 
-func (d DropboxToken)Email(req *http.Request)(DropboxAccountInfo , error){
+func (d DropboxToken)AccountInfo(req *http.Request)(DropboxAccountInfo , error){
 	ai := DropboxAccountInfo{}
 	values := make(url.Values)
 	values.Add("access_token",d.AccessToken)
