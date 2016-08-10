@@ -22,13 +22,13 @@ func (d GoogleToken)TokenInfo(req *http.Request)(GoogleTokenInfo , error){
 	return ai,err
 }
 
-/*func (d GoogleToken)AccountInfo(req *http.Request)(GoogleAccountInfo , error){
-	ai := GoogleTokenInfo{}
+func (d GoogleToken)AccountInfo(req *http.Request)(GoogleAccountInfo , error){
+	ai := GoogleAccountInfo{}
 	values := make(url.Values)
 	values.Add("access_token",d.AccessToken)
-	err := CallAPI(req,"GET", "https://api.dropboxapi.com/1/account/info", values, &ai)	
+	err := CallAPI(req,"GET", "https://www.googleapis.com/oauth2/v3/userinfo", values, &ai)	
 	return ai,err
-}*/
+}
 
 type GoogleTokenInfo struct {
 	AZP 			string `json:"azp"`
@@ -44,7 +44,15 @@ type GoogleTokenInfo struct {
 }
 
 type GoogleAccountInfo struct {
-
+	Sub				string `json:"sub"`
+	FullName		string `json:"name"`
+	FirstName		string `json:"given_name"`
+	LastName		string `json:"family_name"`
+	ProfileURL		string `json:"profile"`
+	PictureURL		string `json:"picture"`
+	Email			string `json:"email"`
+	EmailVerified 	  bool `json:"email_verified"`
+	Gender 			string `json:"gender"`
 }
 //////////////////////////////////////////////////////////////////////////////////
 // Send for Google OAuth
