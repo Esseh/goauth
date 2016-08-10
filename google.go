@@ -1,11 +1,28 @@
 package goauth
 import(
 	"net/http"
+	"net/url"
 	"fmt"
 	"strings"
 )
-
 type GoogleToken struct {
+	AccessToken string `json:"access_token"`
+	IDToken		string `json:"id_token"`
+	ExpiresIn   int64 `json:"expires_in"`
+	TokenType   string `json:"token_type"`
+	RefreshToken string `json:"refresh_token"`
+	State string
+}
+
+func (d GoogleToken)AccountInfo(req *http.Request)(GoogleTokenInfo , error){
+	ai := GoogleTokenInfo{}
+	values := make(url.Values)
+	values.Add("access_token",d.AccessToken)
+	err := CallAPI(req,"GET", "https://api.dropboxapi.com/1/account/info", values, &ai)	
+	return ai,err
+}
+
+type GoogleTokenInfo struct {
 	AZP 			string `json:"azp"`
 	AUD 			string `json:"aud"`
 	SUB 			string `json:"sub"`
@@ -31,23 +48,15 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 //////////////////////////////////////////////////////////////////////////////////
 // Recieve for Google OAuth
 //////////////////////////////////////////////////////////////////////////////////
-// An internal struct for a step of the google OAuth process.
-type googleData struct {
-	AccessToken string `json:"access_token"`
-	IDToken		string `json:"id_token"`
-	ExpiresIn   int64 `json:"expires_in"`
-	TokenType   string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
-}
 func googleRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
 	resp, err := requiredRecieve(res,req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
 	if err != nil { 
 		return err 
 	}
-	var data googleData
-	err = extractValue(resp, &data) 
+	err = extractValue(resp,token) 
 	if err != nil { return err }
-	
+
+	/*
 	res2, err := internalClient(req).Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
 	if err != nil { return err }	
 
@@ -56,6 +65,7 @@ func googleRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientI
 	if err != nil { return err }
 	
 	*token = trueToken
+	*/
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }
