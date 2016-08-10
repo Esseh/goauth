@@ -23,11 +23,11 @@ func (d GitHubToken)Email(req *http.Request)(GitHubEmail , error){
 }
 
 func (d GitHubToken)AccountInfo(req *http.Request)(GitHubAccountInfo , error){
-	ai := []GitHubAccountInfo{}
+	ai := GitHubAccountInfo{}
 	values := make(url.Values)
 	values.Add("access_token",d.AccessToken)
 	err := CallAPI(req,"GET", "https://api.github.com/user", values, &ai)	
-	return ai[0],err
+	return ai,err
 }
 	
 type GitHubEmail struct {
