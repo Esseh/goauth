@@ -47,9 +47,32 @@ func githubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientI
 	resp, err := requiredRecieve(res,req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
 	if err != nil { return err }
 
-	var ghd GitHubToken
-	err = extractValue(resp,&ghd)
+	err = extractValue(resp,token)
 	if err != nil { return err }
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }
+
+/*func githubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
+	resp, err := requiredRecieve(res,req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
+	if err != nil { return err }
+
+	var ghd githubData
+	err = extractValue(resp,&ghd)
+	if err != nil { return err }
+	
+	// Make second request.
+	response, err := internalClient(req).Get("https://api.github.com/user/emails?access_token=" + ghd.AccessToken)
+	if err != nil { return err }
+
+	// Extract token. Make sure there is data.
+	var data []GitHubToken
+	err = extractValue(response,&data)
+	if err != nil { return err }	
+	if len(data) == 0 { return ErrNoData }
+
+	// Attatch data and state.
+	*token = data[0]
+	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
+	return nil
+}*/
