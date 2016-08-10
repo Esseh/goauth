@@ -31,9 +31,9 @@ func (d GitHubToken)AccountInfo(req *http.Request)(GitHubAccountInfo , error){
 }
 	
 type GitHubEmail struct {
-	Email    string
-	Verified bool
-	Primary  bool
+	Email    string `json:"email"`
+	Verified   bool `json:"verified"`
+	Primary    bool `json:"primary"`
 }
 
 type GitHubAccountInfo struct {
