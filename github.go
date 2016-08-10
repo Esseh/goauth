@@ -34,7 +34,6 @@ type GitHubEmail struct {
 //////////////////////////////////////////////////////////////////////////////////	
 func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
 	values := requiredSend(res,req,redirect,clientID)
-	values.Add("scope", "user:email")
 	http.Redirect(res, req, fmt.Sprintf("https://github.com/login/oauth/authorize?%s",values.Encode()), 302)
 }
 
