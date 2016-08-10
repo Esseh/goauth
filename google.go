@@ -14,7 +14,15 @@ type GoogleToken struct {
 	State string
 }
 
-func (d GoogleToken)AccountInfo(req *http.Request)(GoogleTokenInfo , error){
+func (d GoogleToken)TokenInfo(req *http.Request)(GoogleTokenInfo , error){
+	ai := GoogleTokenInfo{}
+	values := make(url.Values)
+	values.Add("access_token",d.AccessToken)
+	err := CallAPI(req,"GET", "https://www.googleapis.com/oauth2/v3/tokeninfo", values, &ai)	
+	return ai,err
+}
+
+func (d GoogleToken)AccountInfo(req *http.Request)(GoogleAccountInfo , error){
 	ai := GoogleTokenInfo{}
 	values := make(url.Values)
 	values.Add("access_token",d.AccessToken)
@@ -56,16 +64,6 @@ func googleRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientI
 	err = extractValue(resp,token) 
 	if err != nil { return err }
 
-	/*
-	res2, err := internalClient(req).Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="+data.AccessToken)
-	if err != nil { return err }	
-
-	var trueToken GoogleToken
-	err = extractValue(res2, &trueToken) 
-	if err != nil { return err }
-	
-	*token = trueToken
-	*/
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }
