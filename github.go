@@ -1,5 +1,6 @@
 package goauth
 import(
+	"time"
 	"net/http"
 	"net/url"
 	"fmt"
@@ -20,6 +21,14 @@ func (d GitHubToken)Email(req *http.Request)(GitHubEmail , error){
 	err := CallAPI(req,"GET", "https://api.github.com/user/emails", values, &ai)	
 	return ai[0],err
 }
+
+func (d GitHubToken)AccountInfo(req *http.Request)(GitHubAccountInfo , error){
+	ai := []GitHubAccountInfo{}
+	values := make(url.Values)
+	values.Add("access_token",d.AccessToken)
+	err := CallAPI(req,"GET", "https://api.github.com/user", values, &ai)	
+	return ai[0],err
+}
 	
 type GitHubEmail struct {
 	Email    string
@@ -27,6 +36,38 @@ type GitHubEmail struct {
 	Primary  bool
 }
 
+type GitHubAccountInfo struct {
+	Login string `json:"login"`
+	ID int `json:"id"`
+	AvatarURL string `json:"avatar_url"`
+	GravatarID string `json:"gravatar_id"`
+	URL string `json:"url"`
+	HTMLURL string `json:"html_url"`
+	FollowersURL string `json:"followers_url"`
+	FollowingURL string `json:"following_url"`
+	GistsURL string `json:"gists_url"`
+	StarredURL string `json:"starred_url"`
+	SubscriptionsURL string `json:"subscriptions_url"`
+	OrganizationsURL string `json:"organizations_url"`
+	ReposURL string `json:"repos_url"`
+	EventsURL string `json:"events_url"`
+	ReceivedEventsURL string `json:"received_events_url"`
+	Type string `json:"type"`
+	SiteAdmin bool `json:"site_admin"`
+	Name interface{} `json:"name"`
+	Company interface{} `json:"company"`
+	Blog interface{} `json:"blog"`
+	Location interface{} `json:"location"`
+	Email interface{} `json:"email"`
+	Hireable interface{} `json:"hireable"`
+	Bio interface{} `json:"bio"`
+	PublicRepos int `json:"public_repos"`
+	PublicGists int `json:"public_gists"`
+	Followers int `json:"followers"`
+	Following int `json:"following"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -52,27 +93,3 @@ func githubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientI
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil
 }
-
-/*func githubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
-	resp, err := requiredRecieve(res,req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
-	if err != nil { return err }
-
-	var ghd githubData
-	err = extractValue(resp,&ghd)
-	if err != nil { return err }
-	
-	// Make second request.
-	response, err := internalClient(req).Get("https://api.github.com/user/emails?access_token=" + ghd.AccessToken)
-	if err != nil { return err }
-
-	// Extract token. Make sure there is data.
-	var data []GitHubToken
-	err = extractValue(response,&data)
-	if err != nil { return err }	
-	if len(data) == 0 { return ErrNoData }
-
-	// Attatch data and state.
-	*token = data[0]
-	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
-	return nil
-}*/
