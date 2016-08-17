@@ -73,8 +73,8 @@ type GitHubAccountInfo struct {
 //////////////////////////////////////////////////////////////////////////////////
 // Send for Github OAuth
 //////////////////////////////////////////////////////////////////////////////////	
-func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
-	values := requiredSend(res,req,redirect,clientID)
+func GithubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+	values := RequiredSend(res,req,redirect,clientID)
 	http.Redirect(res, req, fmt.Sprintf("https://github.com/login/oauth/authorize?%s",values.Encode()), 302)
 }
 
@@ -84,11 +84,11 @@ func githubSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 /// So Without the ability to unmarshal this ends up way uglier than it should 
 /// be.
 //////////////////////////////////////////////////////////////////////////////////	
-func githubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
-	resp, err := requiredRecieve(res,req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
+func GithubRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GitHubToken) error {
+	resp, err := RequiredRecieve(res,req,clientID,secretID,redirect,"https://github.com/login/oauth/access_token") 
 	if err != nil { return err }
 
-	err = extractValue(resp,token)
+	err = ExtractValue(resp,token)
 	if err != nil { return err }
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]
 	return nil

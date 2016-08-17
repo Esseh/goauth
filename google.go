@@ -57,8 +57,8 @@ type GoogleAccountInfo struct {
 //////////////////////////////////////////////////////////////////////////////////
 // Send for Google OAuth
 //////////////////////////////////////////////////////////////////////////////////
-func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
-	values := requiredSend(res,req,redirect,clientID)
+func GoogleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+	values := RequiredSend(res,req,redirect,clientID)
 	values.Add("scope", "openid email")
 	http.Redirect(res, req, fmt.Sprintf("https://accounts.google.com/o/oauth2/auth?%s",values.Encode()), 302)
 }
@@ -66,12 +66,12 @@ func googleSend(res http.ResponseWriter, req *http.Request, redirect ,clientID s
 //////////////////////////////////////////////////////////////////////////////////
 // Recieve for Google OAuth
 //////////////////////////////////////////////////////////////////////////////////
-func googleRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
-	resp, err := requiredRecieve(res,req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
+func GoogleRecieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token *GoogleToken) error {
+	resp, err := RequiredRecieve(res,req, clientID, secretID, redirect, "https://www.googleapis.com/oauth2/v4/token")
 	if err != nil { 
 		return err 
 	}
-	err = extractValue(resp,token) 
+	err = ExtractValue(resp,token) 
 	if err != nil { return err }
 
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]

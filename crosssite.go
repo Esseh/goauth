@@ -9,12 +9,12 @@ import (
 //////////////////////////////////////////////////////////////////////////////////
 // Stores some piece of information in order to check it later.
 //////////////////////////////////////////////////////////////////////////////////
-func crossSiteInitialize(res http.ResponseWriter,req *http.Request, v string){
+func CrossSiteInitialize(res http.ResponseWriter,req *http.Request, v string){
 	switch ClientType{
 		case "override":
-			CrossSiteInitialize(res,req, v)
+			CrossSiteInitializeOverride(res,req, v)
 		case "appengine":
-			appengineCrossSiteInitialize(res, req, v)
+			AppengineCrossSiteInitialize(res, req, v)
 		default:
 			h := sha256.New()
 			h.Write([]byte(v))
@@ -33,12 +33,12 @@ func crossSiteInitialize(res http.ResponseWriter,req *http.Request, v string){
 //////////////////////////////////////////////////////////////////////////////////
 // Checks the information previously stored to check against cross site attacks. 
 //////////////////////////////////////////////////////////////////////////////////
-func crossSiteResolve(res http.ResponseWriter,req *http.Request) error {
+func CrossSiteResolve(res http.ResponseWriter,req *http.Request) error {
 	switch ClientType{
 		case "override":
-			return CrossSiteResolve(res,req)
+			return CrossSiteResolveOverride(res,req)
 		case "appengine":
-			return appengineCrossSiteResolve(res,req)
+			return AppengineCrossSiteResolve(res,req)
 		default:
 			cookie, cookErr := req.Cookie("goauth")
 			if cookErr != nil {

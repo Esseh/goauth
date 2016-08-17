@@ -48,20 +48,20 @@ func (d DropboxToken)AccountInfo(req *http.Request)(DropboxAccountInfo , error){
 //////////////////////////////////////////////////////////////////////////////////
 // Send for Dropbox OAuth
 //////////////////////////////////////////////////////////////////////////////////
-func dropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
-	values := requiredSend(res,req,redirect,clientID)
+func DropboxSend(res http.ResponseWriter, req *http.Request, redirect ,clientID string){
+	values := RequiredSend(res,req,redirect,clientID)
 	http.Redirect(res, req, "https://www.dropbox.com/1/oauth2/authorize?"+values.Encode(), http.StatusSeeOther)
 }
 
 //////////////////////////////////////////////////////////////////////////////////
 // Recieve for Dropbox OAuth
 //////////////////////////////////////////////////////////////////////////////////
-func dropboxRecieve(res http.ResponseWriter,req *http.Request, redirect ,clientID, secretID string, token *DropboxToken) error {
-	resp, err := requiredRecieve(res,req,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
+func DropboxRecieve(res http.ResponseWriter,req *http.Request, redirect ,clientID, secretID string, token *DropboxToken) error {
+	resp, err := RequiredRecieve(res,req,clientID,secretID,redirect,"https://api.dropbox.com/1/oauth2/token") 
 	if err != nil { return err }
 	
 	var data DropboxToken
-	err = extractValue(resp,&data)
+	err = ExtractValue(resp,&data)
 	if err != nil { return err }
 	*token = data
 	token.State = strings.Split(req.FormValue("state"),"](|)[")[1]

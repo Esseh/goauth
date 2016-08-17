@@ -22,11 +22,11 @@ var ClientType string
 var ClientOverride func(*http.Request)(*http.Client)
 // Initialize cross site checking. It should somehow store
 // a piece of unique information.
-var CrossSiteInitialize func(http.ResponseWriter,*http.Request,string)
+var CrossSiteInitializeOverride func(http.ResponseWriter,*http.Request,string)
 // Resolve cross site checking. It should ensure that the value
 // stored in CrossSiteInitialize has not changed.
 // If an error is returned it should return "goauth.ErrCrossSite"
-var CrossSiteResolve func(http.ResponseWriter,*http.Request) error
+var CrossSiteResolveOverride func(http.ResponseWriter,*http.Request) error
 
 var(
 	//////////////////////////////////////////////////////////////////////////////////
@@ -50,11 +50,11 @@ var(
 func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string, model interface{}){
 	switch model.(type){
 		case *DropboxToken:
-			dropboxSend(res, req, redirect, clientID)
+			DropboxSend(res, req, redirect, clientID)
 		case *GitHubToken:
-			githubSend(res, req, redirect, clientID)
+			GithubSend(res, req, redirect, clientID)
 		case *GoogleToken:
-			googleSend(res, req, redirect, clientID)
+			GoogleSend(res, req, redirect, clientID)
 	}
 }
 
@@ -65,11 +65,11 @@ func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string,
 func Recieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token interface{}) error {
 	switch token.(type){
 		case *DropboxToken:
-			return dropboxRecieve(res, req, redirect ,clientID, secretID, token.(*DropboxToken))
+			return DropboxRecieve(res, req, redirect ,clientID, secretID, token.(*DropboxToken))
 		case *GitHubToken:
-			return githubRecieve(res, req, redirect ,clientID, secretID, token.(*GitHubToken))
+			return GithubRecieve(res, req, redirect ,clientID, secretID, token.(*GitHubToken))
 		case *GoogleToken:
-			return googleRecieve(res, req, redirect ,clientID, secretID, token.(*GoogleToken))
+			return GoogleRecieve(res, req, redirect ,clientID, secretID, token.(*GoogleToken))
 	}
 	return ErrBadToken
 }

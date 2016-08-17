@@ -10,7 +10,7 @@ import(
 //////////////////////////////////////////////////////////////////////////////////
 // Required Parameters - Also performs first half of check against cross-site attacks
 //////////////////////////////////////////////////////////////////////////////////
-func requiredSend(res http.ResponseWriter,req *http.Request,redirect, clientID string) url.Values {
+func RequiredSend(res http.ResponseWriter,req *http.Request,redirect, clientID string) url.Values {
 	values := make(url.Values)
 	values.Add("client_id",clientID)
 	values.Add("redirect_uri",redirect)
@@ -20,7 +20,7 @@ func requiredSend(res http.ResponseWriter,req *http.Request,redirect, clientID s
 	values.Add("state", id.String() + "](|)[" + req.FormValue("state"))
 
 	v := values.Get("state")
-	crossSiteInitialize(res,req, v)
+	CrossSiteInitialize(res,req, v)
 	
 	return values
 }
@@ -32,10 +32,10 @@ func requiredSend(res http.ResponseWriter,req *http.Request,redirect, clientID s
 // I can add in an Accept: application/json
 // but I have only used that for Github which ignored it.
 //////////////////////////////////////////////////////////////////////////////////
-func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
+func RequiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secretID, redirect, src string) (*http.Response, error) {
 	values := make(url.Values)
 	
-	intErr := crossSiteResolve(res,req)
+	intErr := CrossSiteResolve(res,req)
 	if intErr != nil { return &http.Response{},ErrCrossSite }
 	
 	values.Add("code", req.FormValue("code"))
@@ -44,7 +44,7 @@ func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secre
 	values.Add("client_secret", secretID)
 	values.Add("redirect_uri", redirect)	
 
-	client := internalClient(req)
+	client := InternalClient(req)
 	reqq, err := http.NewRequest("POST", src, strings.NewReader(values.Encode()))
 	if err != nil { 
 		return &http.Response{}, err 
@@ -56,7 +56,7 @@ func requiredRecieve(res http.ResponseWriter, req *http.Request, clientID, secre
 //////////////////////////////////////////////////////////////////////////////////
 // Uses reflection to extract a JSON object from a response into an input struct.
 //////////////////////////////////////////////////////////////////////////////////
-func extractValue(res *http.Response, data interface{}) error {
+func ExtractValue(res *http.Response, data interface{}) error {
 	defer res.Body.Close()
 	err := json.NewDecoder(res.Body).Decode(data)
 	if err != nil {
@@ -68,12 +68,12 @@ func extractValue(res *http.Response, data interface{}) error {
 //////////////////////////////////////////////////////////////////////////////////
 // Multiplexer to determine the proper way to generate an http.Client{}
 //////////////////////////////////////////////////////////////////////////////////
-func internalClient(req *http.Request) *http.Client{
+func InternalClient(req *http.Request) *http.Client{
 	switch ClientType{
 		case "override":
 			return ClientOverride(req)
 		case "appengine":
-			return appengineClient(req)
+			return AppengineClient(req)
 	}
 	return &http.Client{}
 }
@@ -81,7 +81,7 @@ func internalClient(req *http.Request) *http.Client{
 
 
 func CallAPI(req *http.Request,METHOD, src string, values url.Values, data interface{}) error {
-	client := internalClient(req)
+	client := InternalClient(req)
 	var reqq *http.Request
 	var err error
 	if METHOD == "POST" {
@@ -94,5 +94,5 @@ func CallAPI(req *http.Request,METHOD, src string, values url.Values, data inter
 	reqq.Header.Set("Accept","application/json")
 	resp, err := client.Do(reqq)	
 	if err != nil { return err }
-	return extractValue(resp,&data)
+	return ExtractValue(resp,&data)
 }
