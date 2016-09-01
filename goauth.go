@@ -42,34 +42,3 @@ var(
 	//////////////////////////////////////////////////////////////////////////////////
 	ErrNoData = errors.New("Error: No Data Found")
 )
-
-//////////////////////////////////////////////////////////////////////////////////
-// Send if a multiplexer function that based on the token type will choose
-// the correct function to execute for the first step of the OAuth handshake.
-//////////////////////////////////////////////////////////////////////////////////
-func Send(res http.ResponseWriter, req *http.Request, redirect ,clientID string, model interface{}){
-	switch model.(type){
-		case *DropboxToken:
-			DropboxSend(res, req, redirect, clientID)
-		case *GitHubToken:
-			GithubSend(res, req, redirect, clientID)
-		case *GoogleToken:
-			GoogleSend(res, req, redirect, clientID)
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-// Recieve is a multiplexer function, based on the token type it will use the 
-// appropriate function to get the OAuth token.
-//////////////////////////////////////////////////////////////////////////////////
-func Recieve(res http.ResponseWriter, req *http.Request, redirect ,clientID, secretID string, token interface{}) error {
-	switch token.(type){
-		case *DropboxToken:
-			return DropboxRecieve(res, req, redirect ,clientID, secretID, token.(*DropboxToken))
-		case *GitHubToken:
-			return GithubRecieve(res, req, redirect ,clientID, secretID, token.(*GitHubToken))
-		case *GoogleToken:
-			return GoogleRecieve(res, req, redirect ,clientID, secretID, token.(*GoogleToken))
-	}
-	return ErrBadToken
-}
