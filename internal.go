@@ -69,9 +69,9 @@ func ExtractValue(res *http.Response, data interface{}) error {
 // Multiplexer to determine the proper way to generate an http.Client{}
 //////////////////////////////////////////////////////////////////////////////////
 func InternalClient(req *http.Request) *http.Client{
-	switch ClientType{
+	switch GlobalSettings.ClientType{
 		case "override":
-			return ClientOverride(req)
+			return GlobalSettings.ClientOverride(req)
 		case "appengine":
 			return AppengineClient(req)
 	}

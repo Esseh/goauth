@@ -10,9 +10,9 @@ import (
 // Stores some piece of information in order to check it later.
 //////////////////////////////////////////////////////////////////////////////////
 func CrossSiteInitialize(res http.ResponseWriter,req *http.Request, v string){
-	switch ClientType{
+	switch GlobalSettings.ClientType{
 		case "override":
-			CrossSiteInitializeOverride(res,req, v)
+			GlobalSettings.CrossSiteInitializeOverride(res,req, v)
 		case "appengine":
 			AppengineCrossSiteInitialize(res, req, v)
 		default:
@@ -34,9 +34,9 @@ func CrossSiteInitialize(res http.ResponseWriter,req *http.Request, v string){
 // Checks the information previously stored to check against cross site attacks. 
 //////////////////////////////////////////////////////////////////////////////////
 func CrossSiteResolve(res http.ResponseWriter,req *http.Request) error {
-	switch ClientType{
+	switch GlobalSettings.ClientType{
 		case "override":
-			return CrossSiteResolveOverride(res,req)
+			return GlobalSettings.CrossSiteResolveOverride(res,req)
 		case "appengine":
 			return AppengineCrossSiteResolve(res,req)
 		default:
